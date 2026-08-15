@@ -1,0 +1,257 @@
+class Calculator {
+
+    constructor(previousOperandElement, currentOperandElement) {
+
+        this.previousOperandElement = previousOperandElement;
+        this.currentOperandElement = currentOperandElement;
+
+        this.clear();
+    }
+
+    clear() {
+
+        this.currentOperand = "";
+        this.previousOperand = "";
+        this.operation = undefined;
+
+        this.updateDisplay();
+    }
+
+    delete() {
+
+        this.currentOperand =
+            this.currentOperand.toString().slice(0, -1);
+
+        this.updateDisplay();
+    }
+
+    appendNumber(number) {
+
+        // Prevent multiple decimal points
+        if (number === "." && this.currentOperand.includes(".")) {
+            return;
+        }
+
+        this.currentOperand =
+            this.currentOperand.toString() + number.toString();
+
+        this.updateDisplay();
+    }
+
+    chooseOperation(operation) {
+
+        if (this.currentOperand === "" && this.previousOperand === "") {
+            return;
+        }
+
+        if (this.currentOperand === "" && this.previousOperand !== "") {
+            this.operation = operation;
+            this.updateDisplay();
+            return;
+        }
+
+        if (this.previousOperand !== "") {
+            this.compute();
+        }
+
+        this.operation = operation;
+        this.previousOperand = this.currentOperand;
+        this.currentOperand = "";
+
+        this.updateDisplay();
+    }
+
+    compute() {
+
+        const previous = parseFloat(this.previousOperand);
+        const current = parseFloat(this.currentOperand);
+
+        if (isNaN(previous) || isNaN(current)) {
+            return;
+        }
+
+        let result;
+
+        switch (this.operation) {
+
+            case "+":
+                result = previous + current;
+                break;
+
+            case "-":
+                result = previous - current;
+                break;
+
+            case "×":
+                result = previous * current;
+                break;
+
+            case "÷":
+                if (current === 0) {
+                    this.currentOperand = "Error";
+                    this.previousOperand = "";
+                    this.operation = undefined;
+                    this.updateDisplay();
+                    return;
+                }
+
+                result = previous / current;
+                break;
+
+            case "%":
+                result = previous % current;
+                break;
+
+            default:
+                return;
+        }
+
+        // Avoid excessively long floating-point results
+        result = Math.round((result + Number.EPSILON) * 100000000) / 100000000;
+
+        this.currentOperand = result;
+        this.previousOperand = "";
+        this.operation = undefined;
+
+        this.updateDisplay();
+    }
+
+    updateDisplay() {
+
+        this.currentOperandElement.textContent =
+            this.currentOperand || "0";
+
+        if (this.operation && this.previousOperand !== "") {
+
+            this.previousOperandElement.textContent =
+                `${this.previousOperand} ${this.operation}`;
+
+        } else {
+
+            this.previousOperandElement.textContent = "";
+        }
+    }
+}
+
+
+/* Get display elements */
+
+const previousOperandElement =
+    document.getElementById("previous-operand");
+
+const currentOperandElement =
+    document.getElementById("current-operand");
+
+
+/* Create calculator */
+
+const calculator =
+    new Calculator(
+        previousOperandElement,
+        currentOperandElement
+    );
+
+
+/* Number buttons */
+
+document.querySelectorAll("[data-number]").forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        calculator.appendNumber(
+            button.dataset.number
+        );
+
+    });
+
+});
+
+
+/* Operator buttons */
+
+document.querySelectorAll("[data-operation]").forEach(button => {
+
+    button.addEventListener("click", () => {
+
+        calculator.chooseOperation(
+            button.dataset.operation
+        );
+
+    });
+
+});
+
+
+/* Function buttons */
+
+document.querySelector("[data-action='clear']")
+    .addEventListener("click", () => {
+        calculator.clear();
+    });
+
+
+document.querySelector("[data-action='delete']")
+    .addEventListener("click", () => {
+        calculator.delete();
+    });
+
+
+document.querySelector("[data-action='equals']")
+    .addEventListener("click", () => {
+        calculator.compute();
+    });
+
+
+/* Keyboard support */
+
+document.addEventListener("keydown", event => {
+
+    if (
+        (event.key >= "0" && event.key <= "9") ||
+        event.key === "."
+    ) {
+
+        calculator.appendNumber(event.key);
+    }
+
+    else if (
+        event.key === "+" ||
+        event.key === "-" ||
+        event.key === "*" ||
+        event.key === "/"
+    ) {
+
+        const operations = {
+            "+": "+",
+            "-": "-",
+            "*": "×",
+            "/": "÷"
+        };
+
+        calculator.chooseOperation(
+            operations[event.key]
+        );
+    }
+
+    else if (event.key === "%") {
+
+        calculator.chooseOperation("%");
+    }
+
+    else if (event.key === "Enter" || event.key === "=") {
+
+        event.preventDefault();
+        calculator.compute();
+    }
+
+    else if (event.key === "Backspace") {
+
+        calculator.delete();
+    }
+
+    else if (event.key === "Escape") {
+
+        calculator.clear();
+    }
+
+});
